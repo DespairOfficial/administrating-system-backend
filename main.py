@@ -64,9 +64,11 @@ def getDomens():
 		})
 	return {"domens": list_of_domens}
 
+
 class DomenModel(BaseModel):
 	name: str
 	server: str
+
 
 @app.post("/domens")
 def getDomens(domen_model: DomenModel):
