@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import shutil
 
 app = FastAPI()
 
@@ -74,6 +75,13 @@ def getDomens(domen_model: DomenModel):
 	os.mkdir(target_dir)
 	with open(target_dir +'/index.html', 'w') as fp:
 		fp.write(domen_model.name + ' by ' + domen_model.server)
+
+@app.post("/domens/delete")
+def getDomens(domen_model: DomenModel):
+	cwd = os.getcwd()
+	target_dir = cwd +'/' + domen_model.server + '/' + domen_model.name
+	shutil.rmtree(target_dir)
+
 
 
 if __name__ == "__main__":
