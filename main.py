@@ -9,6 +9,35 @@ import shutil
 
 app = FastAPI()
 
+
+def template(domen):
+	tmp = """
+; BIND data file for """ + domen + """
+;
+$TTL	604800
+@	IN	SOA	""" + domen + """. root.""" + domen + """. (
+			2		; Serial
+			604800		; Refresh
+			86400		; Retry
+			2419200		; Expire
+			604800 )	; Negative Cache TTL
+
+@	IN	NS	ns.""" + domen + """.	
+@	IN	A	192.168.43.24
+@	IN	AAAA	::1
+ns	IN	A	192.168.43.24
+"""
+	return tmp
+
+def zone(domen):
+	zone = 'zone "'+ domen + '\" {\n\ttype master;\n\tfile \"/etc/bind/db.'+domen+'\";\n};\n\n'
+	return zone
+
+
+
+
+
+
 origins = [
 	"http://localhost:3000",
 	"*"
@@ -71,19 +100,28 @@ class DomenModel(BaseModel):
 
 
 @app.post("/domens")
-def getDomens(domen_model: DomenModel):
+def addDomen(domen_model: DomenModel):
 	cwd = os.getcwd()
 	target_dir = cwd +'/' + domen_model.server + '/' + domen_model.name
 	os.mkdir(target_dir)
 	with open(target_dir +'/index.html', 'w') as fp:
 		fp.write(domen_model.name + ' by ' + domen_model.server)
+	with open("/etc/bind/db."+ domen_model.name, 'w') as fp:
+		fp.write(template(domen_model.name))
+	with open("/etc/bind/named.conf.local", 'a') as fp:
+		fp.write(zone(domen_model.name))
 
 @app.post("/domens/delete")
 def getDomens(domen_model: DomenModel):
 	cwd = os.getcwd()
 	target_dir = cwd +'/' + domen_model.server + '/' + domen_model.name
 	shutil.rmtree(target_dir)
+	os.popen("rm /etc/bind/db."+domen_model.name)
 
+@app.get("/domens/reload")
+def reload():
+	os.popen("resolvectl flush-caches")
+	os.popen("sudo systemctl restart bind9")
 
 
 if __name__ == "__main__":
